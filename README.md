@@ -1,26 +1,41 @@
-# Tonaufnahmen-Nachbereitung
+# Tonaufnahmen Nachbereitung
 
 Ein automatisiertes Skript zum Taggen und Verschieben von Tonaufnahmen (z.B. aus Cubase exportierten Predigten) in der Kirchengemeinde.
+
+## 1. Projekt-Überblick
+
 Das Skript fragt interaktiv die nötigen Metadaten ab, benennt die MP3-Datei entsprechend einheitlich um, fügt alle nötigen ID3-Tags inklusive Cover-Bild hinzu und kopiert die Datei schließlich in den korrekten Google Drive Unterordner.
 
-## Systemvoraussetzungen
-- Auf dem Rechner ist **keine Installation** von Node.js oder Web-Technologien nötig, da das Programm als einzelne, portable `.exe`-Datei (Windows) ausgeliefert wird.
-- Wenn du den Code weiterentwickeln möchtest, benötigst du **[Bun](https://bun.sh/)**.
+---
 
-## Konfiguration (`config.yml`)
-Das Tool liest beim Start eine `config.yml` Datei ein, die im gleichen Ordner **neben** der `.exe` liegen muss.
-In dieser Datei können wichtige Pfade angepasst werden, ohne das Programm neu kompilieren zu müssen.
-Beispielsweise kannst du dort eintragen, wo Google Drive bei dir lokal liegt und wie der Ordner heißt, in dem Cubase speichert.
+## 2. Benutzung
 
-## Funktionsweise
-Wenn du das Programm startest, liest es die verfügbaren Veranstaltungs-Ordner (Format: `JJJJ_MM_TT (Name)`) aus dem Hauptordner `Tonaufnahmen`.
-Du wählst eine Veranstaltung aus und das Skript sucht im zugehörigen Unterordner `Mixdown` nach exportierten `.mp3` Dateien.
+Der Assistent führt schrittweise durch den Prozess:
 
-Für jede gefundene Datei wirst du nach dem Titel, dem Export-Typ (Botschaft, Lied, Moderation, etc.) und dem Prediger gefragt. Die MP3s werden dann direkt mit den korrekten ID3-Tags versehen, lokal umbenannt und anschließend automatisch in deinen konfigurierten Google Drive Ordner kopiert (ein neuer Unterordner wird dafür automatisch erstellt).
+1. **Skript starten:** Das Programm öffnet sich und liest die verfügbaren Veranstaltungs-Ordner (Format: `JJJJ_MM_TT (Name)`) aus dem Hauptordner in `Tonaufnahmen`.
+2. **Veranstaltung wählen:** Aus der Liste wird die passende Veranstaltung ausgewählt. Das Skript sucht im zugehörigen Unterordner `Mixdown` nach exportierten `.mp3` Dateien.
+3. **Metadaten eingeben:** Für jede gefundene Datei wird nach dem Titel, dem Export-Typ (Botschaft, Lied, Moderation, etc.) und dem Prediger gefragt. 
+4. **Abschluss:** Die MP3-Dateien werden direkt mit den korrekten ID3-Tags versehen, lokal umbenannt und anschließend automatisch in den konfigurierten Google Drive Ordner kopiert (ein neuer Unterordner wird dafür strukturiert erstellt).
 
-## Entwicklung & Build
+---
 
-Das Projekt nutzt TypeScript und ist modular aufgebaut (`src/**/*.ts`).
+## 3. Einrichtung
+
+Zur initialen Einrichtung müssen die Pfade im Skript an die lokale Umgebung angepasst werden.
+
+1. **Konfiguration anpassen:** 
+   Das Tool liest beim Start eine `config.yml` Datei ein, die im gleichen Ordner **neben** der ausführbaren Datei (`.exe` bzw. Verknüpfung) liegen muss. In dieser Datei können wichtige Pfade (wie der Pfad zum Google Drive oder Cubase-Exportordner) angepasst werden, ohne das Programm neu kompilieren zu müssen.
+2. **Systemvoraussetzungen:**
+   - Auf dem Zielrechner ist **keine Installation** von Node.js oder Web-Technologien nötig. Das Programm wird als einzelne, portable `.exe`-Datei (Windows) ausgeliefert.
+
+---
+
+## 4. Entwicklung & Technische Details
+
+Für Wartung und Weiterentwicklung sind folgende Details relevant:
+
+* **Sprache:** TypeScript, ausgeführt und gebündelt mit **[Bun](https://bun.sh/)**.
+* **Aufbau:** Das Projekt ist modular aufgebaut (`src/**/*.ts`).
 
 ```bash
 # Abhängigkeiten installieren
@@ -36,13 +51,15 @@ bun run format:write
 bun run typecheck
 ```
 
-Um das Programm für den Gemeinder-Rechner final zu exportieren, nutze diesen Befehl:
+### Build & Deploy
+
+Um das Programm für den Rechner der Gemeinde final zu exportieren, wird folgender Befehl genutzt:
 ```bash
 bun run export
 ```
-Dies erzeugt die Datei `Tonaufnahmen-Nachbereitung.exe`. Kopiere diese `.exe` gemeinsam mit deiner angepassten `config.yml` auf den Windows-Rechner der Gemeinde.
+Dies erzeugt die Datei `Tonaufnahmen-Nachbereitung.exe`. Diese `.exe` wird gemeinsam mit einer angepassten `config.yml` auf den Windows-Rechner kopiert.
 
-Alternativ kannst du das Deployment für das Synology Drive auch vollständig automatisieren (baut die .exe und verschiebt sie samt config in den richtigen Zielordner):
+Alternativ kann das Deployment für das Synology Drive auch vollständig automatisiert werden (baut die `.exe` und verschiebt sie samt Konfigurationsdatei in den richtigen Zielordner):
 ```bash
 bun run deploy
 ```
