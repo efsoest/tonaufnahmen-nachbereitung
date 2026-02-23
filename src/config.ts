@@ -22,12 +22,20 @@ interface AppConfig {
  * Falls back to default values if the file is missing or invalid.
  */
 function loadConfig(): AppConfig {
-  // Path to config.yml relative to the execution directory (e.g. next to the .exe)
-  const configPath = path.join(process.cwd(), 'config.yml');
+  // 1. Path to config.yml relative to the execution directory (e.g. where the shortcut was launched)
+  let configPath = path.join(process.cwd(), 'config.yml');
+
+  // 2. Fall back to the directory of the executable itself, if missing in CWD
+  if (!fs.existsSync(configPath) && process.execPath) {
+    const execConfigPath = path.join(path.dirname(process.execPath), 'config.yml');
+    if (fs.existsSync(execConfigPath)) {
+      configPath = execConfigPath;
+    }
+  }
 
   if (!fs.existsSync(configPath)) {
     console.log(
-      `ℹ️ Keine config.yml gefunden unter ${configPath}. Verwende Standard-Werte.\n`,
+      `ℹ️ Keine config.yml gefunden. Verwende Standard-Werte.\n`,
     );
     return DEFAULT_CONFIG;
   }
