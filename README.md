@@ -41,3 +41,8 @@ Um das Programm für den Gemeinder-Rechner final zu exportieren, nutze diesen Be
 bun run export
 ```
 Dies erzeugt die Datei `Tonaufnahmen-Nachbereitung.exe`. Kopiere diese `.exe` gemeinsam mit deiner angepassten `config.yml` auf den Windows-Rechner der Gemeinde.
+
+Alternativ kannst du das Deployment für das Synology Drive auch vollständig automatisieren (baut die .exe und verschiebt sie samt config in den richtigen Zielordner):
+```bash
+bun run deploy
+```
