@@ -1,0 +1,30 @@
+# =====================================================================
+# KONFIGURATIONSDATEI FÜR TONAUFNAHMEN-NACHBEREITUNG
+# =====================================================================
+# Diese Datei wird beim Start des Programms eingelesen.
+# Du kannst diese Datei in einem Texteditor öffnen und anpassen, ohne 
+# das Programm neu kompilieren (.exe neu erstellen) zu müssen.
+# 
+# ACHTUNG bei Pfaden unter Windows: 
+# Entweder einfache Slashes (/) oder doppelte Backslashes (\\) verwenden.
+# Beispiel: "C:/Users/Gemeinde/Desktop/Tonaufnahmen" oder "C:\\Users\\..."
+# =====================================================================
+
+# 1. HAUPTORDNER DER TONAUFNAHMEN
+# In diesem Ordner sucht das Skript nach Projektordnern im Format YYYY_MM_DD.
+# Wenn hier ./ steht, sucht das Skript in dem Ordner, in dem die .exe liegt.
+baseDir: "./Tonaufnahmen"
+
+# 2. ZIELORDNER FÜR DEN UPLOAD (GOOGLE DRIVE / SYNOLOGY)
+# Hierhin werden die fertig getaggten Dateien kopiert.
+# Das Skript legt dort automatisch Dateiname-spezifische Unterordner an.
+driveDir: "C:/Users/Benutzername/Google Drive/Tonaufnahmen"
+
+# 3. UNTERORDNER FÜR EXPORTE IN CUBASE
+# Der Name des Ordners innerhalb eines Projekts, in den Cubase exportiert
+mixdownFolderName: "Mixdown"
+
+# 4. COVER BILD (Optional)
+# Wenn dieses Bild existiert (Pfad relativ zur .exe oder absolut), 
+# wird es in die MP3s eingebettet
+coverImagePath: "cover.jpg"
