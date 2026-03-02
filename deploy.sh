@@ -27,8 +27,19 @@ cp "$SOURCE_DIR/$SCRIPT_NAME" "$TARGET_DIR/"
 
 # Copy config.yml if it exists, to provide a default config in the target dir
 if [ -f "$SOURCE_DIR/config.yml" ]; then
-    echo "Copying config.yml to $TARGET_DIR..."
-    cp "$SOURCE_DIR/config.yml" "$TARGET_DIR/"
+    if [ -f "$TARGET_DIR/config.yml" ]; then
+        read -p "config.yml already exists in the target directory. Overwrite? (y/N) " -n 1 -r
+        echo
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "Overwriting config.yml in $TARGET_DIR..."
+            cp "$SOURCE_DIR/config.yml" "$TARGET_DIR/"
+        else
+            echo "Skipping config.yml overwrite."
+        fi
+    else
+        echo "Copying config.yml to $TARGET_DIR..."
+        cp "$SOURCE_DIR/config.yml" "$TARGET_DIR/"
+    fi
 fi
 
 # Check if copy was successful
