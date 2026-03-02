@@ -66,7 +66,6 @@ export const getEventFolders = (baseDir: string): EventFolder[] => {
     // Sort descending by date (newest first)
     return folders.sort((a, b) => b.date.getTime() - a.date.getTime());
   } catch (err) {
-    console.error(`Fehler beim Lesen des Basis-Ordners ${baseDir}:`, err);
     return [];
   }
 };

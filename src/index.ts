@@ -11,7 +11,16 @@ async function main() {
   console.clear();
   console.log('🎙️  Willkommen zur Tonaufnahmen-Nachbereitung!\n');
 
-  // 1. Find event folders
+  // Validate BASE_DIR
+  if (!fs.existsSync(BASE_DIR)) {
+    console.log('\n❌ Der Konfigurierte Basis-Ordner (baseDir) existiert nicht.');
+    console.log(`Pfad: ${BASE_DIR}`);
+    console.log('Bitte überprüfe die config.yml und den Pfad.');
+    await waitForKeyPressAndExit(1);
+    return;
+  }
+
+  // Find event folders
   console.log(`Suche nach Veranstaltungsordnern in: ${BASE_DIR}...`);
   const folders = getEventFolders(BASE_DIR);
 
@@ -24,7 +33,7 @@ async function main() {
     return;
   }
 
-  // 2. Select event folder via CLI
+  // Select event folder via CLI
   const selectedEvent = await promptEventSelection(folders);
   if (!selectedEvent) {
     console.log('Abbruch.');
@@ -34,7 +43,7 @@ async function main() {
 
   console.log(`\n📂 Ausgewählt: ${selectedEvent.displayName}`);
 
-  // 3. Search for MP3 files in the "Mixdown" subfolder
+  // Search for MP3 files in the "Mixdown" subfolder
   const mixdownDir = path.join(selectedEvent.fullPath, MIXDOWN_FOLDER_NAME);
   const mp3Files = getMp3FilesInDir(mixdownDir);
 
@@ -96,7 +105,7 @@ async function main() {
       });
     }
 
-    // 4. Summary & Confirmation
+    // Summary & Confirmation
     console.clear();
     console.log('📋 --- ZUSAMMENFASSUNG ---\n');
 
@@ -104,6 +113,15 @@ async function main() {
     // Requirement: Subfolder in Drive should have the same name as the (first) file (without .mp3)
     const mainFolderName = path.basename(processedFiles[0].finalFilename, '.mp3');
     targetDriveFolder = path.join(DRIVE_DIR, mainFolderName);
+
+    // Validate DRIVE_DIR before proceeding
+    if (!fs.existsSync(DRIVE_DIR)) {
+      console.log('\n❌ Der konfigurierte Ziel-Ordner (driveDir) existiert nicht.');
+      console.log(`Google Drive Pfad: ${DRIVE_DIR}`);
+      console.log('Bitte überprüfe die config.yml und stelle sicher, dass Google Drive verbunden ist.');
+      await waitForKeyPressAndExit(1);
+      return;
+    }
 
     console.log(`📂 Ziel-Ordner in Google Drive:\n-> ${targetDriveFolder}\n`);
 
@@ -144,7 +162,7 @@ async function main() {
     }
   }
 
-  // 5. Process files (In-place ID3 tags and rename/copy)
+  // Process files (In-place ID3 tags and rename/copy)
   let errors = 0;
 
   // Create target folder in Drive if it doesn't exist
@@ -179,7 +197,7 @@ async function main() {
     }
     console.log('OK');
 
-    // 1. Rename the file in-place in the original folder (Mixdown)
+    // Rename the file in-place in the original folder (Mixdown)
     const newLocalPath = path.join(mixdownDir, item.finalFilename);
     try {
       // If the new name is different from the old one
@@ -187,7 +205,7 @@ async function main() {
         fs.renameSync(item.originalMp3.fullPath, newLocalPath);
       }
 
-      // 2. Copy the file (Asynchronous with loading spinner)
+      // Copy the file (Asynchronous with loading spinner)
       const driveFilePath = path.join(targetDriveFolder, item.finalFilename);
 
       const spinner = ora(
