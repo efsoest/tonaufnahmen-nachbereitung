@@ -4,7 +4,7 @@ import ora from 'ora';
 import * as path from 'path';
 import { BASE_DIR, DRIVE_DIR, MIXDOWN_FOLDER_NAME } from './config.js';
 import { buildFinalFilename, buildId3Title, writeId3Tags } from './tagger.js';
-import { getEventFolders, getMp3FilesInDir } from './utils.js';
+import { getEventFolders, getMp3FilesInDir, waitForKeyPressAndExit } from './utils.js';
 import { promptEventSelection, promptMp3Metadata } from './wizard.js';
 
 async function main() {
@@ -20,14 +20,14 @@ async function main() {
     console.log(
       `Bitte stelle sicher, dass du das Programm im Hauptordner ausführst.`,
     );
-    process.exit(1);
+    await waitForKeyPressAndExit(1);
   }
 
   // 2. Select event folder via CLI
   const selectedEvent = await promptEventSelection(folders);
   if (!selectedEvent) {
     console.log('Abbruch.');
-    process.exit(0);
+    await waitForKeyPressAndExit(0);
   }
 
   console.log(`\n📂 Ausgewählt: ${selectedEvent.displayName}`);
@@ -38,10 +38,12 @@ async function main() {
 
   if (mp3Files.length === 0) {
     console.log(
-      `\n❌ Keine MP3-Dateien im Ordner ${MIXDOWN_FOLDER_NAME} gefunden.`,
+      `\n❌ Keine MP3-Dateien im Ordner "${MIXDOWN_FOLDER_NAME}" gefunden.`,
     );
-    console.log(`Pfade: ${mixdownDir}`);
-    process.exit(1);
+    console.log(`Bitte exportiere die Tonaufnahme aus deiner DAW (z.B. Cubase) als MP3 in den Ordner:`);
+    console.log(`-> ${mixdownDir}`);
+    console.log(`Starte das Programm danach erneut.`);
+    await waitForKeyPressAndExit(1);
   }
 
   const isMultiple = mp3Files.length > 1;
@@ -112,7 +114,7 @@ async function main() {
 
   if (!ready) {
     console.log('Abbruch durch Nutzer.');
-    process.exit(0);
+    await waitForKeyPressAndExit(0);
   }
 
   // 5. Process files (In-place ID3 tags and rename/copy)
@@ -127,7 +129,7 @@ async function main() {
         `\n❌ Fehler beim Erstellen des Drive-Ordners ${targetDriveFolder}:`,
         err,
       );
-      process.exit(1);
+      await waitForKeyPressAndExit(1);
     }
   }
 
@@ -193,6 +195,11 @@ async function main() {
   } else {
     console.log(`\n⚠️ Abgeschlossen mit ${errors} Fehlern. Bitte Logs prüfen.`);
   }
+
+  await waitForKeyPressAndExit(errors === 0 ? 0 : 1);
 }
 
-main().catch(console.error);
+main().catch(async (error) => {
+  console.error(error);
+  await waitForKeyPressAndExit(1);
+});

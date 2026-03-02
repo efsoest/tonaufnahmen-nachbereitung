@@ -99,3 +99,27 @@ export const getMp3FilesInDir = (dirPath: string): Mp3File[] => {
 export const padTrackNumber = (num: number): string => {
   return num.toString().padStart(2, '0');
 };
+
+/**
+ * Waits for the user to press any key before exiting the process.
+ * Useful to prevent the terminal window from closing immediately.
+ */
+export const waitForKeyPressAndExit = async (exitCode: number = 0): Promise<void> => {
+  console.log('\nDrücke eine beliebige Taste zum Beenden...');
+
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdin.once('data', () => {
+      process.stdin.setRawMode(false);
+      process.stdin.pause();
+      process.exit(exitCode);
+    });
+  } else {
+    // Fallback if not running in a TTY environment
+    process.exit(exitCode);
+  }
+
+  // Keep the process alive while waiting for the event
+  await new Promise(() => {});
+};
