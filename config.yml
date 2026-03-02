@@ -13,18 +13,18 @@
 # 1. HAUPTORDNER DER TONAUFNAHMEN
 # In diesem Ordner sucht das Skript nach Projektordnern im Format YYYY_MM_DD.
 # Wenn hier ./ steht, sucht das Skript in dem Ordner, in dem die .exe liegt.
-baseDir: "./Tonaufnahmen"
+baseDir: "D:/Veranstaltungen/"
 
 # 2. ZIELORDNER FÜR DEN UPLOAD (GOOGLE DRIVE / SYNOLOGY)
 # Hierhin werden die fertig getaggten Dateien kopiert.
 # Das Skript legt dort automatisch Dateiname-spezifische Unterordner an.
-driveDir: "C:/Users/Benutzername/Google Drive/Tonaufnahmen"
+driveDir: "C:/Daten/Google Drive/Aufnahmen zum Download"
 
 # 3. UNTERORDNER FÜR EXPORTE IN CUBASE
 # Der Name des Ordners innerhalb eines Projekts, in den Cubase exportiert
-mixdownFolderName: "Mixdown"
+mixdownFolderName: "Tonaufnahme/MIXDOWN"
 
 # 4. COVER BILD (Optional)
 # Wenn dieses Bild existiert (Pfad relativ zur .exe oder absolut), 
 # wird es in die MP3s eingebettet
-coverImagePath: "cover.jpg"
+coverImagePath: "C:/Daten/CD Cover/wav_mp3_icon_efss.jpg"
