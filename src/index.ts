@@ -1,4 +1,4 @@
-import { confirm } from '@inquirer/prompts';
+import { select } from '@inquirer/prompts';
 import * as fs from 'fs';
 import ora from 'ora';
 import * as path from 'path';
@@ -21,6 +21,7 @@ async function main() {
       `Bitte stelle sicher, dass du das Programm im Hauptordner ausführst.`,
     );
     await waitForKeyPressAndExit(1);
+    return;
   }
 
   // 2. Select event folder via CLI
@@ -28,6 +29,7 @@ async function main() {
   if (!selectedEvent) {
     console.log('Abbruch.');
     await waitForKeyPressAndExit(0);
+    return;
   }
 
   console.log(`\n📂 Ausgewählt: ${selectedEvent.displayName}`);
@@ -44,77 +46,102 @@ async function main() {
     console.log(`-> ${mixdownDir}`);
     console.log(`Starte das Programm danach erneut.`);
     await waitForKeyPressAndExit(1);
+    return;
   }
 
   const isMultiple = mp3Files.length > 1;
   console.log(`Gefunden: ${mp3Files.length} MP3-Datei(en).`);
 
-  // Collect metadata and paths for all files for the final summary
-  const processedFiles: {
+  let isReady = false;
+  let targetDriveFolder = '';
+  let processedFiles: {
     originalMp3: any;
     metadata: any;
     finalFilename: string;
     finalTitle: string;
   }[] = [];
 
-  for (let i = 0; i < mp3Files.length; i++) {
-    const mp3 = mp3Files[i];
-    const defaultTrackNum = i + 1; // 1-basiert
+  while (!isReady) {
+    // Collect metadata and paths for all files for the final summary
+    processedFiles = [];
 
-    console.log(
-      `\n🎵 Bearbeite Datei ${defaultTrackNum} von ${mp3Files.length}: ${mp3.filename}`,
-    );
+    for (let i = 0; i < mp3Files.length; i++) {
+      const mp3 = mp3Files[i];
+      const defaultTrackNum = i + 1; // 1-basiert
 
-    // Propose filename without .mp3 as the default title
-    const defaultTitle = path.basename(mp3.filename, '.mp3');
+      console.log(
+        `\n🎵 Bearbeite Datei ${defaultTrackNum} von ${mp3Files.length}: ${mp3.filename}`,
+      );
 
-    const metadata = await promptMp3Metadata(
-      defaultTitle,
-      isMultiple,
-      defaultTrackNum,
-    );
-    const finalFilename = buildFinalFilename(
-      metadata,
-      selectedEvent.date,
-      isMultiple,
-    );
-    const finalTitle = buildId3Title(metadata);
+      // Propose filename without .mp3 as the default title
+      const defaultTitle = path.basename(mp3.filename, '.mp3');
 
-    processedFiles.push({
-      originalMp3: mp3,
-      metadata,
-      finalFilename,
-      finalTitle,
+      const metadata = await promptMp3Metadata(
+        defaultTitle,
+        isMultiple,
+        defaultTrackNum,
+      );
+      const finalFilename = buildFinalFilename(
+        metadata,
+        selectedEvent.date,
+        isMultiple,
+      );
+      const finalTitle = buildId3Title(metadata);
+
+      processedFiles.push({
+        originalMp3: mp3,
+        metadata,
+        finalFilename,
+        finalTitle,
+      });
+    }
+
+    // 4. Summary & Confirmation
+    console.clear();
+    console.log('📋 --- ZUSAMMENFASSUNG ---\n');
+
+    // Show planned target directory (based on the first file as the main folder)
+    // Requirement: Subfolder in Drive should have the same name as the (first) file (without .mp3)
+    const mainFolderName = path.basename(processedFiles[0].finalFilename, '.mp3');
+    targetDriveFolder = path.join(DRIVE_DIR, mainFolderName);
+
+    console.log(`📂 Ziel-Ordner in Google Drive:\n-> ${targetDriveFolder}\n`);
+
+    for (const item of processedFiles) {
+      console.log(`🎵 Original: ${item.originalMp3.filename}`);
+      console.log(`   -> ID3-Titel: ${item.finalTitle}`);
+      console.log(`   -> Neuer Name: ${item.finalFilename}`);
+      console.log(`   -> Track: ${item.metadata.trackNumber}\n`);
+    }
+
+    const action = await select({
+      message: 'Was möchtest du tun?',
+      choices: [
+        {
+          name: '✅ Ja, jetzt speichern und in Drive kopieren',
+          value: 'save',
+        },
+        {
+          name: '✏️  Nein, Eingaben korrigieren',
+          value: 'edit',
+        },
+        {
+          name: '❌ Abbrechen',
+          value: 'cancel',
+        },
+      ],
     });
-  }
 
-  // 4. Summary & Confirmation
-  console.clear();
-  console.log('📋 --- ZUSAMMENFASSUNG ---\n');
-
-  // Show planned target directory (based on the first file as the main folder)
-  // Requirement: Subfolder in Drive should have the same name as the (first) file (without .mp3)
-  const mainFolderName = path.basename(processedFiles[0].finalFilename, '.mp3');
-  const targetDriveFolder = path.join(DRIVE_DIR, mainFolderName);
-
-  console.log(`📂 Ziel-Ordner in Google Drive:\n-> ${targetDriveFolder}\n`);
-
-  for (const item of processedFiles) {
-    console.log(`🎵 Original: ${item.originalMp3.filename}`);
-    console.log(`   -> ID3-Titel: ${item.finalTitle}`);
-    console.log(`   -> Neuer Name: ${item.finalFilename}`);
-    console.log(`   -> Track: ${item.metadata.trackNumber}\n`);
-  }
-
-  const ready = await confirm({
-    message:
-      'Alle Daten korrekt? Jetzt ID3-Tags schreiben und in Drive kopieren?',
-    default: true,
-  });
-
-  if (!ready) {
-    console.log('Abbruch durch Nutzer.');
-    await waitForKeyPressAndExit(0);
+    if (action === 'cancel') {
+      console.log('Abbruch durch Nutzer.');
+      await waitForKeyPressAndExit(0);
+      return;
+    } else if (action === 'edit') {
+      console.log('\n--- Neustart der Eingaben ---');
+      continue;
+    } else if (action === 'save') {
+      isReady = true;
+    }
   }
 
   // 5. Process files (In-place ID3 tags and rename/copy)
@@ -130,6 +157,7 @@ async function main() {
         err,
       );
       await waitForKeyPressAndExit(1);
+      return;
     }
   }
 
