@@ -3,7 +3,7 @@
 # Define paths
 SOURCE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SCRIPT_NAME="Tonaufnahmen-Nachbereitung.exe"
-TARGET_DIR="/Users/mklassen/Library/CloudStorage/SynologyDrive-EFSS-MediaTEAM/Technik/Tontechnik/Tools/Tonaufnahmen-Nachbereitung"
+TARGET_DIR="/Users/mklassen/Library/CloudStorage/SynologyDrive-EFSS-MediaTEAM/Orga/Tontechnik/Tools/Tonaufnahmen-Nachbereitung"
 
 echo "Deploying $SCRIPT_NAME..."
 
