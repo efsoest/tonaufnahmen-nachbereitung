@@ -28,7 +28,7 @@ export const makeSafeFilename = (input: string): string => {
     .replace(/Ö/g, 'Oe')
     .replace(/Ü/g, 'Ue')
     .replace(/ß/g, 'ss')
-    .replace(/[<>:"/\\|?*]/g, '_') // Fallback replacement for forbidden chars
+    .replace(/[<>:"/\\|?*]/g, '') // Remove forbidden chars
     .replace(/\s+/g, ' ') // Collapse multiple spaces
     .trim();
 };

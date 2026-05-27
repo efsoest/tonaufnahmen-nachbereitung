@@ -1,4 +1,4 @@
-import { confirm, input, select, Separator } from '@inquirer/prompts';
+import { input, select, Separator } from '@inquirer/prompts';
 import { EventFolder, ExportType, ProcessingMetadata } from './types.js';
 import { makeSafeFilename, validateFilenameInput } from './utils.js';
 
@@ -63,17 +63,53 @@ export const promptMp3Metadata = async (
   isMultiple: boolean,
   defaultTrackNum: number,
 ): Promise<ProcessingMetadata> => {
-  // Prompt and validate title
+  // Prompt and validate title (loop to allow re-entry on invalid characters)
   console.log('\n----------------------------------------');
-  let rawTitle = await input({
-    message: 'Titel (z.B. "Jesus heilt die Wunden"):',
-    default: mp3TitleDefault, // Default to file name without .mp3 extension
-    validate: (val) =>
-      val.trim().length > 0 ? true : 'Bitte einen Titel eingeben!',
-  });
+  let safeTitle = '';
 
-  // Automatically uppercase the title (requirement)
-  rawTitle = rawTitle.toUpperCase();
+  while (true) {
+    let rawTitle = await input({
+      message: 'Titel (z.B. "Jesus heilt die Wunden"):',
+      default: mp3TitleDefault, // Default to file name without .mp3 extension
+      validate: (val) =>
+        val.trim().length > 0 ? true : 'Bitte einen Titel eingeben!',
+    });
+
+    // Automatically uppercase the title (requirement)
+    rawTitle = rawTitle.toUpperCase();
+
+    // Safety check to ensure the title doesn't contain illegal Windows filesystem characters
+    const titleValidation = validateFilenameInput(rawTitle);
+
+    if (titleValidation === true) {
+      safeTitle = rawTitle;
+      break;
+    }
+
+    // Invalid characters found – show warning and offer choices
+    console.log(`\n⚠️ ${titleValidation}`);
+    const suggestedTitle = makeSafeFilename(rawTitle);
+
+    const action = await select({
+      message: 'Wie möchtest du fortfahren?',
+      choices: [
+        {
+          name: `✅ Ungültige Zeichen automatisch entfernen → "${suggestedTitle}"`,
+          value: 'auto',
+        },
+        {
+          name: '✏️  Titel selbst korrigieren (erneute Eingabe)',
+          value: 'reedit',
+        },
+      ],
+    });
+
+    if (action === 'auto') {
+      safeTitle = suggestedTitle;
+      break;
+    }
+    // action === 'reedit' → loop continues, user gets a fresh prompt
+  }
 
   // Prompt for export type
   const exportType = (await select({
@@ -123,28 +159,6 @@ export const promptMp3Metadata = async (
       },
     });
     trackNumber = parseInt(rawTrackNum, 10);
-  }
-
-  // Safety check to ensure the title doesn't contain illegal Windows filesystem characters
-  const titleValidation = validateFilenameInput(rawTitle);
-  let safeTitle = rawTitle;
-
-  if (titleValidation !== true) {
-    console.log(`\n⚠️ ${titleValidation}`);
-    const suggestedSafeTitle = makeSafeFilename(rawTitle);
-
-    const useSafe = await confirm({
-      message: `Soll stattdessen "${suggestedSafeTitle}" verwendet werden?`,
-      default: true,
-    });
-
-    if (useSafe) {
-      safeTitle = suggestedSafeTitle;
-    } else {
-      // Fallback to the validated safe name
-      console.log(`Verwende vorgeschlagenen Titel: ${suggestedSafeTitle}`);
-      safeTitle = suggestedSafeTitle;
-    }
   }
 
   return {
