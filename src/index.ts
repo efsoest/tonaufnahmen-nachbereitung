@@ -5,7 +5,11 @@ import * as path from 'path';
 import { BASE_DIR, DRIVE_DIR, MIXDOWN_FOLDER_NAME } from './config.js';
 import { buildFinalFilename, buildId3Title, writeId3Tags } from './tagger.js';
 import { getEventFolders, getMp3FilesInDir, waitForKeyPressAndExit } from './utils.js';
-import { promptEventSelection, promptMp3Metadata } from './wizard.js';
+import {
+  promptEventSelection,
+  promptMp3Metadata,
+  promptTargetFolderName,
+} from './wizard.js';
 
 async function main() {
   console.clear();
@@ -74,6 +78,14 @@ async function main() {
     // Collect metadata and paths for all files for the final summary
     processedFiles = [];
 
+    // Prompt for target drive folder name if processing multiple files
+    let targetSubFolderName = '';
+    if (isMultiple) {
+      targetSubFolderName = await promptTargetFolderName(
+        selectedEvent.displayName,
+      );
+    }
+
     for (let i = 0; i < mp3Files.length; i++) {
       const mp3 = mp3Files[i];
       const defaultTrackNum = i + 1; // 1-basiert
@@ -109,9 +121,11 @@ async function main() {
     console.clear();
     console.log('📋 --- ZUSAMMENFASSUNG ---\n');
 
-    // Show planned target directory (based on the first file as the main folder)
-    // Requirement: Subfolder in Drive should have the same name as the (first) file (without .mp3)
-    const mainFolderName = path.basename(processedFiles[0].finalFilename, '.mp3');
+    // Show planned target directory
+    // Multi-file: custom prompt folder name. Single file: filename without .mp3
+    const mainFolderName = isMultiple
+      ? targetSubFolderName
+      : path.basename(processedFiles[0].finalFilename, '.mp3');
     targetDriveFolder = path.join(DRIVE_DIR, mainFolderName);
 
     // Validate DRIVE_DIR before proceeding

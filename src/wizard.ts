@@ -55,6 +55,61 @@ export const promptEventSelection = async (
 };
 
 /**
+ * Prompts the user for a validated text input that must be safe for Windows filenames.
+ * Optionally converts the input to uppercase. On invalid characters, offers auto-fix
+ * or manual re-entry.
+ */
+const promptValidatedFilenameInput = async (options: {
+  message: string;
+  defaultValue: string;
+  emptyError: string;
+  reEditLabel: string;
+  toUpperCase?: boolean;
+}): Promise<string> => {
+  while (true) {
+    let rawValue = await input({
+      message: options.message,
+      default: options.defaultValue,
+      validate: (val) =>
+        val.trim().length > 0 ? true : options.emptyError,
+    });
+
+    if (options.toUpperCase) {
+      rawValue = rawValue.toUpperCase();
+    }
+
+    rawValue = rawValue.trim();
+
+    const validation = validateFilenameInput(rawValue);
+
+    if (validation === true) {
+      return rawValue;
+    }
+
+    console.log(`\n⚠️ ${validation}`);
+    const suggested = makeSafeFilename(rawValue);
+
+    const action = await select({
+      message: 'Wie möchtest du fortfahren?',
+      choices: [
+        {
+          name: `✅ Ungültige Zeichen automatisch entfernen → "${suggested}"`,
+          value: 'auto',
+        },
+        {
+          name: `✏️  ${options.reEditLabel} selbst korrigieren (erneute Eingabe)`,
+          value: 'reedit',
+        },
+      ],
+    });
+
+    if (action === 'auto') {
+      return suggested;
+    }
+  }
+};
+
+/**
  * Starts the configuration wizard for a single MP3 file.
  * Certain questions (e.g. track number) may change depending on file count.
  */
@@ -63,53 +118,15 @@ export const promptMp3Metadata = async (
   isMultiple: boolean,
   defaultTrackNum: number,
 ): Promise<ProcessingMetadata> => {
-  // Prompt and validate title (loop to allow re-entry on invalid characters)
   console.log('\n----------------------------------------');
-  let safeTitle = '';
 
-  while (true) {
-    let rawTitle = await input({
-      message: 'Titel (z.B. "Jesus heilt die Wunden"):',
-      default: mp3TitleDefault, // Default to file name without .mp3 extension
-      validate: (val) =>
-        val.trim().length > 0 ? true : 'Bitte einen Titel eingeben!',
-    });
-
-    // Automatically uppercase the title (requirement)
-    rawTitle = rawTitle.toUpperCase();
-
-    // Safety check to ensure the title doesn't contain illegal Windows filesystem characters
-    const titleValidation = validateFilenameInput(rawTitle);
-
-    if (titleValidation === true) {
-      safeTitle = rawTitle;
-      break;
-    }
-
-    // Invalid characters found – show warning and offer choices
-    console.log(`\n⚠️ ${titleValidation}`);
-    const suggestedTitle = makeSafeFilename(rawTitle);
-
-    const action = await select({
-      message: 'Wie möchtest du fortfahren?',
-      choices: [
-        {
-          name: `✅ Ungültige Zeichen automatisch entfernen → "${suggestedTitle}"`,
-          value: 'auto',
-        },
-        {
-          name: '✏️  Titel selbst korrigieren (erneute Eingabe)',
-          value: 'reedit',
-        },
-      ],
-    });
-
-    if (action === 'auto') {
-      safeTitle = suggestedTitle;
-      break;
-    }
-    // action === 'reedit' → loop continues, user gets a fresh prompt
-  }
+  const safeTitle = await promptValidatedFilenameInput({
+    message: 'Titel (z.B. "Jesus heilt die Wunden"):',
+    defaultValue: mp3TitleDefault,
+    emptyError: 'Bitte einen Titel eingeben!',
+    reEditLabel: 'Titel',
+    toUpperCase: true,
+  });
 
   // Prompt for export type
   const exportType = (await select({
@@ -168,4 +185,22 @@ export const promptMp3Metadata = async (
     customExportType,
     trackNumber,
   };
+};
+
+/**
+ * Prompts the user for the target drive folder name during multi-file processing.
+ * Validates against illegal Windows filename characters and uppercases the input.
+ */
+export const promptTargetFolderName = async (
+  defaultFolderName: string,
+): Promise<string> => {
+  console.log('\n----------------------------------------');
+
+  return promptValidatedFilenameInput({
+    message: 'Ziel-Ordnername in Google Drive:',
+    defaultValue: defaultFolderName,
+    emptyError: 'Bitte einen Ordnernamen eingeben!',
+    reEditLabel: 'Ordnername',
+    toUpperCase: true,
+  });
 };
