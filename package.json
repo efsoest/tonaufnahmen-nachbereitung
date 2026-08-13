@@ -6,7 +6,7 @@
   "scripts": {
     "start": "bun run src/index.ts",
     "test": "bun test",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "bunx tsc --noEmit",
     "format:write": "prettier --write \"src/**/*.ts\"",
     "export": "bun build ./src/index.ts --compile --target=bun-windows-x64 --outfile=Tonaufnahmen-Nachbereitung.exe",
     "deploy": "./deploy.sh"
