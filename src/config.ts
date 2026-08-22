@@ -22,12 +22,17 @@ interface AppConfig {
  * Falls back to default values if the file is missing or invalid.
  */
 function loadConfig(): AppConfig {
-  // 1. Path to config.yml relative to the execution directory (e.g. where the shortcut was launched)
-  let configPath = path.join(process.cwd(), 'config.yml');
+  const configFilename = process.env.CONFIG_PATH || 'config.yml';
+  let configPath = path.isAbsolute(configFilename)
+    ? configFilename
+    : path.join(process.cwd(), configFilename);
 
   // 2. Fall back to the directory of the executable itself, if missing in CWD
   if (!fs.existsSync(configPath) && process.execPath) {
-    const execConfigPath = path.join(path.dirname(process.execPath), 'config.yml');
+    const execConfigPath = path.join(
+      path.dirname(process.execPath),
+      configFilename,
+    );
     if (fs.existsSync(execConfigPath)) {
       configPath = execConfigPath;
     }
@@ -35,7 +40,7 @@ function loadConfig(): AppConfig {
 
   if (!fs.existsSync(configPath)) {
     console.log(
-      `ℹ️ Keine config.yml gefunden. Verwende Standard-Werte.\n`,
+      `ℹ️ Keine ${configFilename} gefunden. Verwende Standard-Werte.\n`,
     );
     return DEFAULT_CONFIG;
   }
@@ -60,6 +65,12 @@ function loadConfig(): AppConfig {
       config.baseDir = path.resolve(process.cwd(), config.baseDir);
     }
     if (
+      config.driveDir.startsWith('./') ||
+      config.driveDir.startsWith('.\\')
+    ) {
+      config.driveDir = path.resolve(process.cwd(), config.driveDir);
+    }
+    if (
       config.coverImagePath.startsWith('./') ||
       config.coverImagePath.startsWith('.\\') ||
       !path.isAbsolute(config.coverImagePath)
@@ -79,6 +90,7 @@ function loadConfig(): AppConfig {
 }
 
 // Load and export the final configuration used throughout the project
+export { loadConfig };
 const finalConfig = loadConfig();
 
 export const BASE_DIR = finalConfig.baseDir;

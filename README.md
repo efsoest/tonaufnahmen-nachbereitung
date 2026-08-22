@@ -49,6 +49,21 @@ bun run format:write
 
 # TypeScript Typecheck
 bun run typecheck
+
+# Tests (Unit & End-to-End) ausführen
+bun test
+```
+
+### Lokales Testen (ohne Produktiv-Dateien)
+
+Für die lokale Entwicklung auf macOS steht ein virtuelles Test-Setup mit Fake-MP3-Dateien zur Verfügung:
+
+```bash
+# 1. Lokale Test-Umgebung in ./test-env/ aufbauen/zurücksetzen (generiert Fake-MP3s & config.test.yml)
+bun run test:setup
+
+# 2. Skript interaktiv im Test-Modus starten (nutzt config.test.yml)
+bun run test:dev
 ```
 
 ### Build & Deploy

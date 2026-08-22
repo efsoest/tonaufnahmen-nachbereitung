@@ -1,6 +1,6 @@
 import * as fs from 'fs';
 import NodeID3 from 'node-id3';
-import { COVER_IMAGE_PATH } from './config.js';
+import { COVER_IMAGE_PATH, loadConfig } from './config.js';
 import { Mp3File, ProcessingMetadata } from './types.js';
 import { padTrackNumber } from './utils.js';
 
@@ -27,7 +27,7 @@ export const writeId3Tags = (
   const artist = metadata.preacherOrGroup || 'Unbekannt';
 
   const tags: NodeID3.Tags = {
-    title: metadata.title,
+    title: buildId3Title(metadata),
     artist: artist,
     album: eventName,
     year: yearStr,
@@ -35,7 +35,11 @@ export const writeId3Tags = (
   };
 
   // Attach cover image (cover.jpg) if it exists
-  if (fs.existsSync(COVER_IMAGE_PATH)) {
+  const activeCoverPath = fs.existsSync(COVER_IMAGE_PATH)
+    ? COVER_IMAGE_PATH
+    : loadConfig().coverImagePath;
+
+  if (fs.existsSync(activeCoverPath)) {
     tags.image = {
       mime: 'image/jpeg',
       type: {
@@ -43,7 +47,7 @@ export const writeId3Tags = (
         name: 'front cover',
       },
       description: 'Album Cover',
-      imageBuffer: fs.readFileSync(COVER_IMAGE_PATH),
+      imageBuffer: fs.readFileSync(activeCoverPath),
     };
   }
 

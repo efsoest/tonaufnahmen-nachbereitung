@@ -35,3 +35,7 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Executable
 *.exe
+
+# Local Test Environment
+test-env/
+config.test.yml
