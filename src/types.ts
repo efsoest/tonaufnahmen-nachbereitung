@@ -6,12 +6,7 @@ export interface EventFolder {
 }
 
 export type ExportType =
-  | 'Botschaft'
-  | 'Lied'
-  | 'Moderation'
-  | 'Begrüßung'
-  | 'Abschluss'
-  | 'Sonstiges';
+  'Botschaft' | 'Lied' | 'Moderation' | 'Begrüßung' | 'Abschluss' | 'Sonstiges';
 
 export interface Mp3File {
   filename: string;
@@ -24,4 +19,12 @@ export interface ProcessingMetadata {
   exportType: ExportType;
   customExportType?: string;
   trackNumber?: number;
+}
+
+export interface SessionData {
+  version: number;
+  eventName: string;
+  targetSubFolderName?: string;
+  updatedAt: string;
+  files: Record<string, ProcessingMetadata>;
 }

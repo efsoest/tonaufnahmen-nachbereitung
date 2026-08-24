@@ -39,3 +39,4 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 # Local Test Environment
 test-env/
 config.test.yml
+.session.json

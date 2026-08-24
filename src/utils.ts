@@ -103,7 +103,9 @@ export const padTrackNumber = (num: number): string => {
  * Waits for the user to press any key before exiting the process.
  * Useful to prevent the terminal window from closing immediately.
  */
-export const waitForKeyPressAndExit = async (exitCode: number = 0): Promise<void> => {
+export const waitForKeyPressAndExit = async (
+  exitCode: number = 0,
+): Promise<void> => {
   console.log('\nDrücke eine beliebige Taste zum Beenden...');
 
   if (process.stdin.isTTY) {

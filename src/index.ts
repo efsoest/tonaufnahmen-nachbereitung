@@ -3,11 +3,24 @@ import * as fs from 'fs';
 import ora from 'ora';
 import * as path from 'path';
 import { BASE_DIR, DRIVE_DIR, MIXDOWN_FOLDER_NAME } from './config.js';
+import {
+  createInitialSession,
+  deleteSession,
+  loadSession,
+  saveSession,
+  updateFileInSession,
+} from './session.js';
 import { buildFinalFilename, buildId3Title, writeId3Tags } from './tagger.js';
-import { getEventFolders, getMp3FilesInDir, waitForKeyPressAndExit } from './utils.js';
+import { Mp3File, ProcessingMetadata, SessionData } from './types.js';
+import {
+  getEventFolders,
+  getMp3FilesInDir,
+  waitForKeyPressAndExit,
+} from './utils.js';
 import {
   promptEventSelection,
   promptMp3Metadata,
+  promptResumeSession,
   promptTargetFolderName,
 } from './wizard.js';
 
@@ -17,7 +30,9 @@ async function main() {
 
   // Validate BASE_DIR
   if (!fs.existsSync(BASE_DIR)) {
-    console.log('\n❌ Der Konfigurierte Basis-Ordner (baseDir) existiert nicht.');
+    console.log(
+      '\n❌ Der Konfigurierte Basis-Ordner (baseDir) existiert nicht.',
+    );
     console.log(`Pfad: ${BASE_DIR}`);
     console.log('Bitte überprüfe die config.yml und den Pfad.');
     await waitForKeyPressAndExit(1);
@@ -55,7 +70,9 @@ async function main() {
     console.log(
       `\n❌ Keine MP3-Dateien im Ordner "${MIXDOWN_FOLDER_NAME}" gefunden.`,
     );
-    console.log(`Bitte exportiere die Tonaufnahme aus deiner DAW (z.B. Cubase) als MP3 in den Ordner:`);
+    console.log(
+      `Bitte exportiere die Tonaufnahme aus deiner DAW (z.B. Cubase) als MP3 in den Ordner:`,
+    );
     console.log(`-> ${mixdownDir}`);
     console.log(`Starte das Programm danach erneut.`);
     await waitForKeyPressAndExit(1);
@@ -67,40 +84,114 @@ async function main() {
 
   let isReady = false;
   let targetDriveFolder = '';
+  let targetSubFolderName = '';
   let processedFiles: {
-    originalMp3: any;
-    metadata: any;
+    originalMp3: Mp3File;
+    metadata: ProcessingMetadata;
     finalFilename: string;
     finalTitle: string;
   }[] = [];
+  let previousProcessedFiles: {
+    originalMp3: Mp3File;
+    metadata: ProcessingMetadata;
+    finalFilename: string;
+    finalTitle: string;
+  }[] = [];
+
+  let sessionData: SessionData | null = null;
+  let isResuming = false;
+
+  if (isMultiple) {
+    const existingSession = loadSession(mixdownDir);
+    if (existingSession) {
+      const savedCount = mp3Files.filter((f) =>
+        Boolean(existingSession.files[f.filename]),
+      ).length;
+
+      if (savedCount > 0) {
+        const choice = await promptResumeSession(savedCount, mp3Files.length);
+        if (choice === 'resume') {
+          sessionData = existingSession;
+          isResuming = true;
+          if (existingSession.targetSubFolderName) {
+            targetSubFolderName = existingSession.targetSubFolderName;
+          }
+        } else {
+          deleteSession(mixdownDir);
+          sessionData = createInitialSession(selectedEvent.displayName);
+        }
+      } else {
+        sessionData = existingSession;
+      }
+    } else {
+      sessionData = createInitialSession(selectedEvent.displayName);
+    }
+  }
 
   while (!isReady) {
     // Collect metadata and paths for all files for the final summary
     processedFiles = [];
 
     // Prompt for target drive folder name if processing multiple files
-    let targetSubFolderName = '';
     if (isMultiple) {
-      targetSubFolderName = await promptTargetFolderName(
-        selectedEvent.displayName,
-      );
+      if (isResuming && targetSubFolderName) {
+        console.log(`\n📂 Ziel-Ordnername aus Sitzung: ${targetSubFolderName}`);
+      } else {
+        targetSubFolderName = await promptTargetFolderName(
+          targetSubFolderName || selectedEvent.displayName,
+        );
+        if (sessionData) {
+          sessionData.targetSubFolderName = targetSubFolderName;
+          saveSession(mixdownDir, sessionData);
+        }
+      }
     }
 
     for (let i = 0; i < mp3Files.length; i++) {
       const mp3 = mp3Files[i];
       const defaultTrackNum = i + 1; // 1-basiert
 
+      const savedMetadata =
+        isResuming && sessionData?.files[mp3.filename]
+          ? sessionData.files[mp3.filename]
+          : undefined;
+
+      if (savedMetadata) {
+        const finalFilename = buildFinalFilename(
+          savedMetadata,
+          selectedEvent.date,
+          isMultiple,
+        );
+        const finalTitle = buildId3Title(savedMetadata);
+
+        console.log(
+          `⏩ [${defaultTrackNum}/${mp3Files.length}] ${mp3.filename} -> ${finalTitle} (aus Sitzung übernommen)`,
+        );
+
+        processedFiles.push({
+          originalMp3: mp3,
+          metadata: savedMetadata,
+          finalFilename,
+          finalTitle,
+        });
+        continue;
+      }
+
       console.log(
         `\n🎵 Bearbeite Datei ${defaultTrackNum} von ${mp3Files.length}: ${mp3.filename}`,
       );
 
-      // Propose filename without .mp3 as the default title
-      const defaultTitle = path.basename(mp3.filename, '.mp3');
+      // Propose previous/existing title or filename without .mp3 as the default title
+      const existingMetadata =
+        previousProcessedFiles[i]?.metadata || sessionData?.files[mp3.filename];
+      const defaultTitle =
+        existingMetadata?.title || path.basename(mp3.filename, '.mp3');
 
       const metadata = await promptMp3Metadata(
         defaultTitle,
         isMultiple,
         defaultTrackNum,
+        existingMetadata,
       );
       const finalFilename = buildFinalFilename(
         metadata,
@@ -109,6 +200,10 @@ async function main() {
       );
       const finalTitle = buildId3Title(metadata);
 
+      if (isMultiple && sessionData) {
+        updateFileInSession(mixdownDir, sessionData, mp3.filename, metadata);
+      }
+
       processedFiles.push({
         originalMp3: mp3,
         metadata,
@@ -116,6 +211,9 @@ async function main() {
         finalTitle,
       });
     }
+
+    // Reset resume flag after first pass so subsequent edits allow full walkthrough
+    isResuming = false;
 
     // Summary & Confirmation
     console.clear();
@@ -130,9 +228,13 @@ async function main() {
 
     // Validate DRIVE_DIR before proceeding
     if (!fs.existsSync(DRIVE_DIR)) {
-      console.log('\n❌ Der konfigurierte Ziel-Ordner (driveDir) existiert nicht.');
+      console.log(
+        '\n❌ Der konfigurierte Ziel-Ordner (driveDir) existiert nicht.',
+      );
       console.log(`Google Drive Pfad: ${DRIVE_DIR}`);
-      console.log('Bitte überprüfe die config.yml und stelle sicher, dass Google Drive verbunden ist.');
+      console.log(
+        'Bitte überprüfe die config.yml und stelle sicher, dass Google Drive verbunden ist.',
+      );
       await waitForKeyPressAndExit(1);
       return;
     }
@@ -169,7 +271,8 @@ async function main() {
       await waitForKeyPressAndExit(0);
       return;
     } else if (action === 'edit') {
-      console.log('\n--- Neustart der Eingaben ---');
+      console.log('\n--- Eingaben bearbeiten ---');
+      previousProcessedFiles = [...processedFiles];
       continue;
     } else if (action === 'save') {
       isReady = true;
@@ -249,6 +352,9 @@ async function main() {
   }
 
   if (errors === 0) {
+    if (isMultiple) {
+      deleteSession(mixdownDir);
+    }
     console.log(
       '\n✅ Erfolgreich abgeschlossen! Alle Dateien wurden verarbeitet und kopiert.',
     );

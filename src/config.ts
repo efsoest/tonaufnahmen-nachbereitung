@@ -64,10 +64,7 @@ function loadConfig(): AppConfig {
     if (config.baseDir.startsWith('./') || config.baseDir.startsWith('.\\')) {
       config.baseDir = path.resolve(process.cwd(), config.baseDir);
     }
-    if (
-      config.driveDir.startsWith('./') ||
-      config.driveDir.startsWith('.\\')
-    ) {
+    if (config.driveDir.startsWith('./') || config.driveDir.startsWith('.\\')) {
       config.driveDir = path.resolve(process.cwd(), config.driveDir);
     }
     if (

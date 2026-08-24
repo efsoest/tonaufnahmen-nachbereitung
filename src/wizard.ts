@@ -70,8 +70,7 @@ const promptValidatedFilenameInput = async (options: {
     let rawValue = await input({
       message: options.message,
       default: options.defaultValue,
-      validate: (val) =>
-        val.trim().length > 0 ? true : options.emptyError,
+      validate: (val) => (val.trim().length > 0 ? true : options.emptyError),
     });
 
     if (options.toUpperCase) {
@@ -112,17 +111,20 @@ const promptValidatedFilenameInput = async (options: {
 /**
  * Starts the configuration wizard for a single MP3 file.
  * Certain questions (e.g. track number) may change depending on file count.
+ * Allows passing existingMetadata to prefill defaults during edit mode or session resumes.
  */
 export const promptMp3Metadata = async (
   mp3TitleDefault: string,
   isMultiple: boolean,
   defaultTrackNum: number,
+  existingMetadata?: Partial<ProcessingMetadata>,
 ): Promise<ProcessingMetadata> => {
   console.log('\n----------------------------------------');
 
+  const titleDefault = existingMetadata?.title || mp3TitleDefault;
   const safeTitle = await promptValidatedFilenameInput({
     message: 'Titel (z.B. "Jesus heilt die Wunden"):',
-    defaultValue: mp3TitleDefault,
+    defaultValue: titleDefault,
     emptyError: 'Bitte einen Titel eingeben!',
     reEditLabel: 'Titel',
     toUpperCase: true,
@@ -131,6 +133,7 @@ export const promptMp3Metadata = async (
   // Prompt for export type
   const exportType = (await select({
     message: 'Art des Exports:',
+    default: existingMetadata?.exportType || 'Botschaft',
     choices: [
       { name: 'Botschaft (Standard)', value: 'Botschaft' },
       { name: 'Lied', value: 'Lied' },
@@ -145,6 +148,7 @@ export const promptMp3Metadata = async (
   if (exportType === 'Sonstiges') {
     customExportType = await input({
       message: 'Bitte Bezeichnung für dieses Element eingeben:',
+      default: existingMetadata?.customExportType ?? undefined,
       validate: (val) =>
         val.trim().length > 0 ? true : 'Bitte eine Bezeichnung eingeben!',
     });
@@ -154,6 +158,7 @@ export const promptMp3Metadata = async (
   const preacherOrGroup = await input({
     message:
       'Name des Predigers/Gruppe (Optional - Leer lassen falls nicht benötigt):',
+    default: existingMetadata?.preacherOrGroup ?? undefined,
     validate: (val) => {
       // If left empty, it's valid
       if (val.trim().length === 0) return true;
@@ -165,9 +170,12 @@ export const promptMp3Metadata = async (
   // Track numbering is only prompted if there are multiple files in the Mixdown folder
   let trackNumber = defaultTrackNum;
   if (isMultiple) {
+    const trackDefault = (
+      existingMetadata?.trackNumber ?? defaultTrackNum
+    ).toString();
     const rawTrackNum = await input({
       message: 'Track-Nummer (Titel CD-Reihenfolge):',
-      default: defaultTrackNum.toString(),
+      default: trackDefault,
       validate: (val) => {
         const parsed = parseInt(val, 10);
         if (isNaN(parsed) || parsed < 1)
@@ -202,5 +210,31 @@ export const promptTargetFolderName = async (
     emptyError: 'Bitte einen Ordnernamen eingeben!',
     reEditLabel: 'Ordnername',
     toUpperCase: true,
+  });
+};
+
+/**
+ * Prompts the user whether to resume a previously saved session or start fresh.
+ */
+export const promptResumeSession = async (
+  savedCount: number,
+  totalCount: number,
+): Promise<'resume' | 'restart'> => {
+  console.log(
+    `\nℹ️  Es wurde eine unfertige Sitzung für diese Veranstaltung gefunden (${savedCount} von ${totalCount} Dateien bereits erfasst).`,
+  );
+
+  return select<'resume' | 'restart'>({
+    message: 'Was möchtest du tun?',
+    choices: [
+      {
+        name: '▶️  Sitzung fortsetzen (bisherige Eingaben übernehmen)',
+        value: 'resume',
+      },
+      {
+        name: '🔄 Neu anfangen (gespeicherte Sitzung verwerfen)',
+        value: 'restart',
+      },
+    ],
   });
 };
