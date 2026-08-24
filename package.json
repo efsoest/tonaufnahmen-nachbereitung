@@ -9,7 +9,7 @@
     "test:setup": "bun scripts/setup-test-env.ts",
     "test:dev": "CONFIG_PATH=config.test.yml bun run src/index.ts",
     "typecheck": "bunx tsc --noEmit",
-    "format:write": "prettier --write \"src/**/*.ts\"",
+    "format:write": "bunx prettier --write \"src/**/*.ts\" README.md AGENTS.md",
     "export": "bun build ./src/index.ts --compile --target=bun-windows-x64 --outfile=Tonaufnahmen-Nachbereitung.exe",
     "deploy": "./deploy.sh"
   },

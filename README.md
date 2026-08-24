@@ -14,7 +14,7 @@ Der Assistent führt schrittweise durch den Prozess:
 
 1. **Skript starten:** Das Programm öffnet sich und liest die verfügbaren Veranstaltungs-Ordner (Format: `JJJJ_MM_TT (Name)`) aus dem Hauptordner in `Tonaufnahmen`.
 2. **Veranstaltung wählen:** Aus der Liste wird die passende Veranstaltung ausgewählt. Das Skript sucht im zugehörigen Unterordner `Mixdown` nach exportierten `.mp3` Dateien.
-3. **Metadaten eingeben:** Für jede gefundene Datei wird nach dem Titel, dem Export-Typ (Botschaft, Lied, Moderation, etc.) und dem Prediger gefragt. 
+3. **Metadaten eingeben:** Für jede gefundene Datei wird nach dem Titel, dem Export-Typ (Botschaft, Lied, Moderation, etc.) und dem Prediger gefragt.
 4. **Abschluss:** Die MP3-Dateien werden direkt mit den korrekten ID3-Tags versehen, lokal umbenannt und anschließend automatisch in den konfigurierten Google Drive Ordner kopiert (ein neuer Unterordner wird dafür strukturiert erstellt).
 
 ---
@@ -23,7 +23,7 @@ Der Assistent führt schrittweise durch den Prozess:
 
 Zur initialen Einrichtung müssen die Pfade im Skript an die lokale Umgebung angepasst werden.
 
-1. **Konfiguration anpassen:** 
+1. **Konfiguration anpassen:**
    Das Tool liest beim Start eine `config.yml` Datei ein, die im gleichen Ordner **neben** der ausführbaren Datei (`.exe` bzw. Verknüpfung) liegen muss. In dieser Datei können wichtige Pfade (wie der Pfad zum Google Drive oder Cubase-Exportordner) angepasst werden, ohne das Programm neu kompilieren zu müssen.
 2. **Systemvoraussetzungen:**
    - Auf dem Zielrechner ist **keine Installation** von Node.js oder Web-Technologien nötig. Das Programm wird als einzelne, portable `.exe`-Datei (Windows) ausgeliefert.
@@ -34,8 +34,8 @@ Zur initialen Einrichtung müssen die Pfade im Skript an die lokale Umgebung ang
 
 Für Wartung und Weiterentwicklung sind folgende Details relevant:
 
-* **Sprache:** TypeScript, ausgeführt und gebündelt mit **[Bun](https://bun.sh/)**.
-* **Aufbau:** Das Projekt ist modular aufgebaut (`src/**/*.ts`).
+- **Sprache:** TypeScript, ausgeführt und gebündelt mit **[Bun](https://bun.sh/)**.
+- **Aufbau:** Das Projekt ist modular aufgebaut (`src/**/*.ts`).
 
 ```bash
 # Abhängigkeiten installieren
@@ -69,12 +69,15 @@ bun run test:dev
 ### Build & Deploy
 
 Um das Programm für den Rechner der Gemeinde final zu exportieren, wird folgender Befehl genutzt:
+
 ```bash
 bun run export
 ```
+
 Dies erzeugt die Datei `Tonaufnahmen-Nachbereitung.exe`. Diese `.exe` wird gemeinsam mit einer angepassten `config.yml` auf den Windows-Rechner kopiert.
 
 Alternativ kann das Deployment für das Synology Drive auch vollständig automatisiert werden (baut die `.exe` und verschiebt sie samt Konfigurationsdatei in den richtigen Zielordner):
+
 ```bash
 bun run deploy
 ```
